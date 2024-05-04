@@ -1,6 +1,7 @@
 const usersRepository = require('./users-repository');
 const { hashPassword, passwordMatched } = require('../../../utils/password');
 
+const { User } = require('../../../models');
 /**
  * Get list of users
  * @returns {Array}
@@ -20,6 +21,52 @@ async function getUsers() {
 
   return results;
 }
+
+async function getUsers({ page_number = 1, page_size = 10, search = '', sort = {} }) {
+  let query = {};
+
+  // Search filter
+  if (search) {
+    query.email = { $regex: search, $options: 'i' };
+  }
+
+  // Sorting
+  let sortQuery = {};
+  if (sort && Object.keys(sort).length > 0) {
+    const sortBy = Object.keys(sort)[0];
+    const sortOrder = sort[sortBy] === 'asc' ? 1 : -1;
+    sortQuery[sortBy] = sortOrder;
+  } else {
+    // Default sorting by ID in descending order
+    sortQuery._id = -1;
+  }
+
+  const totalUsers = await User.countDocuments(query);
+
+  const users = await User.find(query)
+    .sort(sortQuery)
+    .skip((page_number - 1) * page_size)
+    .limit(parseInt(page_size));
+
+  const totalPages = Math.ceil(totalUsers / page_size);
+  const hasNextPage = page_number < totalPages;
+  const hasPreviousPage = page_number > 1;
+
+  return {
+    page_number,
+    page_size,
+    count: users.length,
+    total_pages: totalPages,
+    has_previous_page: hasPreviousPage,
+    has_next_page: hasNextPage,
+    data: users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    })),
+  };
+}
+
 
 /**
  * Get user detail

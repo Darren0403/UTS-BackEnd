@@ -21,6 +21,21 @@ module.exports = (app) => {
     usersControllers.createUser
   );
 
+  route.get('/', authenticationMiddleware, async (request, response, next) => {
+    try {
+      const { page_number, page_size, search, sort } = request.query;
+      const users = await usersService.getUsers({
+        page_number,
+        page_size,
+        search,
+        sort,
+      });
+      return response.status(200).json(users);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   // Get user detail
   route.get('/:id', authenticationMiddleware, usersControllers.getUser);
 

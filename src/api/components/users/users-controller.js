@@ -189,6 +189,21 @@ async function changePassword(request, response, next) {
   }
 }
 
+async function getUsers(request, response, next) {
+  try {
+    const { page_number, page_size, search, sort } = request.query;
+    const users = await usersService.getUsers({
+      page_number,
+      page_size,
+      search,
+      sort,
+    });
+    return response.status(200).json(users);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   getUsers,
   getUser,
